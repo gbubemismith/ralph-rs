@@ -1,0 +1,26 @@
+[package]
+name = "ralph-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive", "env"] }
+humantime = "2.3.0"
+anyhow = "1"
+serde = { version = "1", features = ["derive"]}
+serde_json = "1.0.150"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "time"]}
+tracing = "0.1.43"
+tracing-log = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"]}
+thiserror = "2.0.18"
+async-trait = "0.1.89"
+reqwest = { version = "0.13", features = ["json", "stream"] }
+futures-util = "0.3.32"
+eventsource-stream = "0.2.3"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+wiremock = "0.6.5"
+tempfile = "3"
