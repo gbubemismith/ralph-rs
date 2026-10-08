@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub mod conversation;
+pub mod loop_engine;
 
 /// Maximum number of turns to run in a single iteration of the agentic loop.
 const MAX_TURNS_PER_ITERATION: u32 = 30;

@@ -1,19 +1,12 @@
-use std::{path::PathBuf, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Ok, Result};
 use clap::{Parser, Subcommand};
-use futures_util::StreamExt;
 use tokio::task::JoinHandle;
 
 use crate::{
-    config::Config,
-    display::run_display,
-    events::{Event, EventSender, channel},
-    provider::{
-        Provider,
-        anthropic::AnthrhopicProvider,
-        types::{ChatRequest, ContentDelta, Message, StopReason, StreamEvent},
-    },
+    config::Config, core::run_agentic_loop, display::run_display, events::channel,
+    provider::anthropic::AnthrhopicProvider, tools::Registry,
 };
 
 #[derive(Debug, Parser)]
@@ -85,76 +78,25 @@ impl Cli {
     }
 
     pub async fn run(config: Config) -> Result<()> {
+        let provider = Arc::new(AnthrhopicProvider::new(config.api_key.clone()));
+        let registry = Arc::new(Registry::standard(Arc::from(config.working_dir.as_path())));
         let (tx, rx) = channel();
         let display_task: JoinHandle<()> = tokio::spawn(run_display(rx));
 
-        let result = drive_one_turn(&config, tx).await;
+        let result = run_agentic_loop(
+            provider,
+            registry,
+            config.system_prompt.clone(),
+            config.model.clone(),
+            config.prompt.clone(),
+            tx,
+        )
+        .await;
+
         display_task.await?;
 
         result
     }
-}
-
-async fn drive_one_turn(config: &Config, tx: EventSender) -> Result<()> {
-    let provider = AnthrhopicProvider::new(config.api_key.clone());
-
-    let request = ChatRequest {
-        model: config.model.clone(),
-        max_tokens: 4096,
-        system: config.system_prompt.clone(),
-        messages: vec![Message::user(config.prompt.clone())],
-        tools: vec![],
-        stream: true,
-    };
-
-    let _ = tx.send(Event::TurnStart {
-        model: config.model.clone(),
-    });
-
-    let mut stream = provider.stream(request).await?;
-
-    let mut stop_reason = StopReason::EndTurn;
-    let mut input_tokens = 0u32;
-    let mut output_tokens = 0u32;
-
-    while let Some(event) = stream.next().await {
-        match event? {
-            StreamEvent::MessageStart { message } => {
-                input_tokens = message.usage.input_tokens;
-            }
-            StreamEvent::ContentBlockStart { .. } => {}
-            StreamEvent::ContentBlockDelta { delta, .. } => {
-                if let ContentDelta::TextDelta { text } = delta {
-                    let _ = tx.send(Event::TextDelta { text });
-                }
-            }
-            StreamEvent::ContentBlockStop { .. } => {}
-            StreamEvent::MessageDelta { delta, usage } => {
-                if let Some(reason) = delta.stop_reason {
-                    stop_reason = reason;
-                }
-                if let Some(u) = usage {
-                    output_tokens = u.output_tokens;
-                }
-            }
-            StreamEvent::MessageStop => break,
-            StreamEvent::Ping => {}
-            StreamEvent::Error { error } => {
-                let _ = tx.send(Event::Error {
-                    message: format!("{}: {}", error.error_type, error.message),
-                });
-                anyhow::bail!("stream error: {}", error.message);
-            }
-        }
-    }
-
-    let _ = tx.send(Event::TurnComplete {
-        stop_reason: format!("{stop_reason:?}"),
-        input_tokens,
-        output_tokens,
-    });
-
-    Ok(())
 }
 
 fn parse_duration(s: &str) -> Result<Duration, String> {
