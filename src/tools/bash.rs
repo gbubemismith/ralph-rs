@@ -68,6 +68,7 @@ impl Tool for BashTool {
             .arg("-c")
             .arg(&input.command)
             .current_dir(&self.working_dir)
+            .env_remove("ANTHROPIC_API_KEY")
             .output();
 
         let output = match timeout(timeout_dur, cmd_future).await {

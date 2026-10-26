@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use reqwest::{Client, StatusCode};
+use secrecy::{ExposeSecret, SecretString};
 
 use crate::{
     error::{ProviderError, ProviderResult},
@@ -15,14 +16,14 @@ const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 pub struct AnthrhopicProvider {
-    api_key: String,
+    api_key: SecretString,
     client: Client,
 }
 
 impl AnthrhopicProvider {
-    pub fn new(api_key: String) -> Self {
+    pub fn new(api_key: SecretString) -> Self {
         Self {
-            api_key: api_key,
+            api_key,
             client: Client::new(),
         }
     }
@@ -36,7 +37,7 @@ impl Provider for AnthrhopicProvider {
         let response = self
             .client
             .post(ANTHROPIC_API_URL)
-            .header("x-api-key", &self.api_key)
+            .header("x-api-key", self.api_key.expose_secret())
             .header("anthropic-version", ANTHROPIC_VERSION)
             .header("Content-Type", "application/json")
             .json(&request)
@@ -66,7 +67,7 @@ impl Provider for AnthrhopicProvider {
         let response = self
             .client
             .post(ANTHROPIC_API_URL)
-            .header("x-api-key", &self.api_key)
+            .header("x-api-key", self.api_key.expose_secret())
             .header("anthropic-version", ANTHROPIC_VERSION)
             .header("Content-Type", "application/json")
             .header("accept", "text/event-stream")

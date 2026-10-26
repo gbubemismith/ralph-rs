@@ -46,7 +46,14 @@ fn run_without_api_key_fails() {
 #[test]
 fn run_with_invalid_timeout_fails() {
     ralph()
-        .args(["run", "do the thing", "--api-key", "test-key", "--timeout", "bogus"])
+        .args([
+            "run",
+            "do the thing",
+            "--api-key",
+            "test-key",
+            "--timeout",
+            "bogus",
+        ])
         .assert()
         .failure()
         .stderr(predicate::str::contains("--timeout"));

@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Ok, Result};
 use clap::{Parser, Subcommand};
+use secrecy::SecretString;
 use tokio::task::JoinHandle;
 
 use crate::{
@@ -56,8 +57,9 @@ pub struct RunArgs {
     pub dry_run: bool,
 
     /// Anthropic API key (also reads ANTHROPIC_API_KEY env var).
-    #[arg(long, env = "ANTHROPIC_API_KEY")]
-    pub api_key: String,
+
+    #[arg(long, env = "ANTHROPIC_API_KEY", hide_env_values = true)]
+    pub api_key: SecretString,
 }
 
 impl Cli {

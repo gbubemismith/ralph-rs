@@ -1,6 +1,7 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Context, Ok, Result};
+use secrecy::SecretString;
 
 use crate::cli::RunArgs;
 
@@ -17,7 +18,7 @@ pub struct Config {
     pub model: String,
     pub working_dir: PathBuf,
     pub system_prompt: String,
-    pub api_key: String,
+    pub api_key: SecretString,
 }
 
 impl TryFrom<RunArgs> for Config {

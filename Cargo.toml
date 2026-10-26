@@ -18,6 +18,7 @@ async-trait = "0.1.89"
 reqwest = { version = "0.13", features = ["json", "stream"] }
 futures-util = "0.3.32"
 eventsource-stream = "0.2.3"
+secrecy = "0.10.3"
 
 [dev-dependencies]
 assert_cmd = "2"
